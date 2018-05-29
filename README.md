@@ -1,5 +1,31 @@
 # Sound Controller for Unity3D
 
+This is a fork of [Dimixar's Sound Controller](https://github.com/dimixar/audio-controller-unity) which I tailored it to my needs. Kudos for Dimixar for creating the original!
+
+Main changes:
+- Sound items are referenced by id instead of name. This is less flexible, but makes it much easier to find and to rename items.
+- Removed tag support.
+- Added priority setting to categories.
+- Moved mixer setting to categories.
+- Added play mode setting to sound items. Features:
+  - Sequence: plays sound items sequentially.
+  - Random: plays a random sound item.
+  - Loop One Clip: loops one sound item.
+  - Loop Sequence: loops a list of sound items.
+  - Intro Loop Outro Sequence: plays an intro clip, then loops the second clip until it's stopped with a StopSequence call. Plays the outro clip at this point.
+- Added setting for the minimum time between playing the same sound item again.
+- Override category priority at sound item level.
+- Preview sound item clips.
+- Convinience features in the sound controller inspector like navigation, duplicating items, saving state to remember selected category and sound item.
+- Change sound controller inspector layout.
+- Singleton sound controller - for now. This might very well change.
+- Stack based object pool.
+- Overridable position in PlaySoundSettings when parenting to a GameObject.
+
+[screen]: https://github.com/entim/audio-controller-unity/blob/develop/screenshot.PNG
+
+## Original Readme
+
 This is a sound controller. The main idea of this plugin is to not use raw AudioSource, but have a nice wrapper around it from which you can easily control what sounds at what time you want to play.
 The reason I made this plugin is that I don't really want to pay money for Audiotoolkit from unity asset store, and I didn't really liked it when I had the chance to use it.
 

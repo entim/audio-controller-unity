@@ -3,14 +3,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace OSSC
-{
+namespace OSSC {
     /// <summary>
     /// SoundCue Inteface.
     /// SoundController returns a SoundCue Interface to further control the playing SouncCue
     /// </summary>
-    public interface ISoundCue
-    {
+    public interface ISoundCue {
         /// <summary>
         /// Called everytime a SoundItem finished playing in SoundCue.
         /// </summary>
@@ -55,5 +53,9 @@ namespace OSSC
         /// </summary>
         /// <param name="shouldCallOnFinishedCue">Select whether to Call OnEnd events or not.</param>
         void Stop(bool shouldCallOnFinishedCue = true);
+
+        void StopSequence();
+
+        float Volume { get; set; }
     }
 }

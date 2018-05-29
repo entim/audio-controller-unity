@@ -4,13 +4,11 @@ using UnityEngine;
 using System;
 using OSSC.Model;
 
-namespace OSSC
-{
+namespace OSSC {
     /// <summary>
     /// Plays a whole cue of soundItems
     /// </summary>
-    public class SoundCue : ISoundCue
-    {
+    public class SoundCue : ISoundCue {
         /// <summary>
         /// Check ISoundCue
         /// </summary>
@@ -39,8 +37,7 @@ namespace OSSC
         /// <summary>
         /// Check ISoundCue
         /// </summary>
-        public bool IsPlaying
-        {
+        public bool IsPlaying {
             get;
             private set;
         }
@@ -49,8 +46,7 @@ namespace OSSC
         /// SoundCue's unique ID given by the manager
         /// </summary>
         /// <returns></returns>
-        public int ID
-        {
+        public int ID {
             get;
             private set;
         }
@@ -58,23 +54,21 @@ namespace OSSC
         /// <summary>
         /// Default Constructor
         /// </summary>
-        public SoundCue()
-        {
+        public SoundCue() {
         }
 
         /// <summary>
         /// Custom Constructor
         /// </summary>
         /// <param name="id">Sets the ID of the SoundCue.</param>
-        public SoundCue(int id)
-        {
+        public SoundCue(int id) {
             ID = id;
         }
 
         /// <summary>
-        /// Current index of the SoundItem playing.
+        /// Current index of the clip playing.
         /// </summary>
-        private int _currentItem = 0;
+        private int _currentClip = 0;
         /// <summary>
         /// SoundCue data
         /// </summary>
@@ -88,14 +82,15 @@ namespace OSSC
         /// Will start playing the cue.
         /// NOTE: It is called from SoundCueProxy that is created by the SoundController.
         /// </summary>
-        public void Play(SoundCueData data)
-        {
+        public void Play(SoundCueData data) {
             _data = data;
-            AudioObject.isDespawnOnFinishedPlaying = !data.isLooped;
-            AudioObject.OnFinishedPlaying = OnFinishedPlaying_handler;
-            // audioObject.isDespawnOnFinishedPlaying = false;
-            if (TryPlayNext() == false)
-            {
+
+            AudioObject.isDespawnOnFinishedPlaying = data.soundItem.clips.Length == 1 &&
+                (data.soundItem.playMode == Model.PlayMode.sequence || data.soundItem.playMode == Model.PlayMode.random);
+
+            AudioObject.OnFinishedPlaying = ChooseFinishedPlayingHandler(data.soundItem.playMode);
+
+            if (TryPlayNextClip() == false) {
                 return;
             }
             IsPlaying = true;
@@ -106,8 +101,7 @@ namespace OSSC
         /// </summary>
         /// <param name="data">SoundCue's data</param>
         /// <param name="proxy">Proxy created by SoundController that called this method.</param>
-        public void Play(SoundCueData data, SoundCueProxy proxy)
-        {
+        public void Play(SoundCueData data, SoundCueProxy proxy) {
             Play(data);
             _currentProxy = proxy;
         }
@@ -115,18 +109,16 @@ namespace OSSC
         /// <summary>
         /// Will pause the cue;
         /// </summary>
-        public void Pause()
-        {
-            UnityEngine.Assertions.Assert.IsTrue(_currentItem > 0, "[AudioCue] Cannot pause when not even started.");
+        public void Pause() {
+            UnityEngine.Assertions.Assert.IsTrue(_currentClip > 0, "[AudioCue] Cannot pause when not even started.");
             AudioObject.Pause();
         }
 
         /// <summary>
         /// Resume the cue from where it was paused.
         /// </summary>
-        public void Resume()
-        {
-            UnityEngine.Assertions.Assert.IsTrue(_currentItem > 0, "[AudioCue] Cannot resume when not even started.");
+        public void Resume() {
+            UnityEngine.Assertions.Assert.IsTrue(_currentClip > 0, "[AudioCue] Cannot resume when not even started.");
             AudioObject.Resume();
         }
 
@@ -134,93 +126,127 @@ namespace OSSC
         /// Stops the SoundCue.
         /// </summary>
         /// <param name="shouldCallOnFinishedCue">Checks whether to call OnEnd events, or not.</param>
-        public void Stop(bool shouldCallOnFinishedCue = true)
-        {
-            if (IsPlaying == false)
-                return;
+        public void Stop(bool shouldCallOnFinishedCue = true) {
+            if (IsPlaying == false) return;
+
             AudioObject.OnFinishedPlaying = null;
             // ((IPoolable)audioObject).pool.Despawn(audioObject.gameObject);
             AudioObject.Stop();
             AudioObject = null;
-            _currentItem = 0;
+            _currentClip = 0;
             IsPlaying = false;
 
-            if (shouldCallOnFinishedCue)
-            {
-                if (OnPlayCueEnded != null)
-                {
+            if (shouldCallOnFinishedCue) {
+                if (OnPlayCueEnded != null) {
                     OnPlayCueEnded(this);
                 }
             }
 
-            if (OnPlayKilled != null)
-            {
+            if (OnPlayKilled != null) {
                 OnPlayKilled(this, _currentProxy);
                 _currentProxy = null;
             }
+        }
+
+        public void StopSequence() {
+            UnityEngine.Assertions.Assert.IsTrue(_data.soundItem.playMode == Model.PlayMode.introLoopOutroSequence, "[AudioCue] Cannot stop sequence when it's not in intro loop outry play mode.");
+            if (IsPlaying == false)
+                return;
+
+            AudioObject.isDespawnOnFinishedPlaying = true;
+            if (!_data.category.isMute) {
+                _currentClip = 2;
+                PlayCurrentClip();
+                _currentClip += 1;
+            } else {
+                Stop(true);
+            }
+        }
+
+        public float Volume {
+            get { return _data.soundItem.volume != 0 ? AudioObject.Volume / _data.soundItem.volume : 0; }
+            set { AudioObject.Volume = value * _data.soundItem.volume; }
+        }
+
+        private Action<SoundObject> ChooseFinishedPlayingHandler(Model.PlayMode playMode) {
+            Action<SoundObject> onFinishedPlaying_handler;
+            if (playMode == Model.PlayMode.sequence) onFinishedPlaying_handler = OnFinishedPlayingSequence_handler;
+            else if (playMode == Model.PlayMode.random) onFinishedPlaying_handler = OnFinishedPlayingRandom_handler;
+            else if (playMode == Model.PlayMode.introLoopOutroSequence) onFinishedPlaying_handler = OnFinishedPlayingIntroLoopOutroSequence_handler;
+            else if (playMode == Model.PlayMode.loopOneClip) onFinishedPlaying_handler = OnFinishedPlayingLoopOneClip_handler;
+            else if (playMode == Model.PlayMode.loopSequence) onFinishedPlaying_handler = OnFinishedPlayingLoopSequence_handler;
+            else onFinishedPlaying_handler = OnFinishedPlayingSequence_handler;
+            return onFinishedPlaying_handler;
         }
 
         /// <summary>
         /// Internal event handler.
         /// </summary>
         /// <param name="obj"></param>
-        private void OnFinishedPlaying_handler(SoundObject obj)
-        {
-            string itemName = _data.sounds[_currentItem - 1].name;
-            if (OnPlayEnded != null) {
-                OnPlayEnded(itemName);
-            }
+        private void OnFinishedPlayingSequence_handler(SoundObject obj) {
+            string itemName = _data.soundItem.name;
+            if (OnPlayEnded != null) OnPlayEnded(itemName);
 
-            if (_currentItem < _data.sounds.Length)
-            {
-                if (TryPlayNext() == false)
-                {
-                    Stop(true);
-                }
+            if (_currentClip < _data.soundItem.clips.Length) {
+                if (_currentClip == _data.soundItem.clips.Length - 1) AudioObject.isDespawnOnFinishedPlaying = true;
+                if (TryPlayNextClip() == false) Stop(true);
+            } else {
+                Stop(true);
             }
-            else
-            {
-                if (_data.isLooped)
-                {
-                    _currentItem = 0;
-                    if (TryPlayNext() == false)
-                    {
-                        Stop(true);
-                    }
-                }
-                else
-                {
-                    Stop(true);
-                }
+        }
+        
+        private void OnFinishedPlayingRandom_handler(SoundObject obj) {
+            string itemName = _data.soundItem.name;
+            if (OnPlayEnded != null) OnPlayEnded(itemName);
+            Stop(true);
+        }
+            
+        private void OnFinishedPlayingIntroLoopOutroSequence_handler(SoundObject obj) {
+            string itemName = _data.soundItem.name;
+            if (OnPlayEnded != null) OnPlayEnded(itemName);
+            
+            if (_currentClip == 1) {
+                if (TryPlayNextClip() == false) Stop(true);
+            } else if (_currentClip == 2) {
+                _currentClip = 1;
+                if (TryPlayNextClip() == false) Stop(true);
+            } else {
+                Stop(true);
             }
+        }
+            
+        private void OnFinishedPlayingLoopSequence_handler(SoundObject obj) {
+            string itemName = _data.soundItem.name;
+            if (OnPlayEnded != null) OnPlayEnded(itemName);
+            
+            if (_currentClip < _data.soundItem.clips.Length) {
+                if (TryPlayNextClip() == false) Stop(true);
+            } else if (_currentClip == _data.soundItem.clips.Length) {
+                _currentClip = 0;
+                if (TryPlayNextClip() == false) Stop(true);
+            } else {
+                Stop(true);
+            }
+        }
+            
+        private void OnFinishedPlayingLoopOneClip_handler(SoundObject obj) {
+            string itemName = _data.soundItem.name;
+            if (OnPlayEnded != null) OnPlayEnded(itemName);
+            
+            _currentClip = 0;
+            if (TryPlayNextClip() == false) Stop(true);
         }
 
         /// <summary>
         /// Tries to play the next SoundItem in SoundCue.
         /// </summary>
         /// <returns>True - can play, False - Cannot</returns>
-        private bool TryPlayNext()
-        {
+        private bool TryPlayNextClip() {
             bool isPlaying = false;
-            if (_data.categoriesForSounds[_currentItem].isMute == false)
-            {
-                PlayCurrentItem();
-                _currentItem += 1;
+            if (!_data.category.isMute) {
+                PlayCurrentClip();
+                _currentClip += 1;
                 isPlaying = true;
-            }
-            else
-            {
-                for (int i = _currentItem; i < _data.sounds.Length; i++)
-                {
-                    if (_data.categoriesForSounds[i].isMute == false)
-                    {
-                        _currentItem = i;
-                        PlayCurrentItem();
-                        _currentItem += 1;
-                        isPlaying = true;
-                        break;
-                    }
-                }
             }
             return isPlaying;
         }
@@ -228,40 +254,38 @@ namespace OSSC
         /// <summary>
         /// Plays the Current SoundItem.
         /// </summary>
-        private void PlayCurrentItem()
-        {
-            SoundItem item = _data.sounds[_currentItem];
-            
-            float itemVolume = item.isRandomVolume
-                ? item.volumeRange.GetRandomRange()
-                : item.volume;
-            float realVolume = itemVolume * _data.categoryVolumes[_currentItem];
+        private void PlayCurrentClip() {
+            SoundItem item = _data.soundItem;
+            CategoryItem category = _data.category;
 
-            float realPitch = item.isRandomPitch
-                ? item.pitchRange.GetRandomRange()
-                : 1f;
-            
-            if (_currentItem == _data.sounds.Length - 1)
-            {
+            if (_currentClip == 0) {
+                float clipVolume = item.isRandomVolume ? item.volumeRange.GetRandomRange() : item.volume;
+                float pitch = item.isRandomPitch ? item.pitchRange.GetRandomRange() : 1;
+
+                float volume = clipVolume * category.categoryVolume;
+                int priority = item.overridePriority ? item.priority : category.categoryPriority;
+
                 AudioObject.Setup(
                     item.name,
-                    GetRandomClip( item.clips ),
-                    realVolume,
+                    GetClip(item.playMode, item.clips),
+                    priority,
+                    volume,
                     _data.fadeInTime,
                     _data.fadeOutTime,
-                    item.mixer,
-                    realPitch);
-            }
-            else
-            {
-                AudioObject.Setup(
-                    item.name,
-                    GetRandomClip( item.clips ),
-                    realVolume,
-                    mixer: item.mixer,
-                    pitch: realPitch);
+                    category.mixer,
+                    pitch);
+            } else {
+                AudioObject.SwitchClip(AudioObject.ID, GetClip(item.playMode, item.clips));
             }
             AudioObject.Play();
+        }
+
+        private AudioClip GetClip(Model.PlayMode loopMode, AudioClip[] clips) {
+            if (loopMode == Model.PlayMode.random) {
+                return GetRandomClip(clips);
+            } else {
+                return clips[_currentClip];
+            }
         }
 
         /// <summary>
@@ -269,8 +293,7 @@ namespace OSSC
         /// </summary>
         /// <param name="clips">Array of SoundClips</param>
         /// <returns>An AudioClip</returns>
-        private AudioClip GetRandomClip(AudioClip[] clips)
-        {
+        private AudioClip GetRandomClip(AudioClip[] clips) {
             int index = UnityEngine.Random.Range(0, clips.Length);
             return clips[index];
         }
@@ -279,20 +302,15 @@ namespace OSSC
     /// <summary>
     /// Used for sending data to play to AudioCue
     /// </summary>
-    public struct SoundCueData
-    {
+    public struct SoundCueData {
         /// <summary>
         /// sound items that played by the SoundCue.
         /// </summary>
-        public SoundItem[] sounds;
+        public SoundItem soundItem;
         /// <summary>
         /// category items that correspond with each of SoundItem in sounds.
         /// </summary>
-        public CategoryItem[] categoriesForSounds;
-        /// <summary>
-        /// Category sound volumes that correspond with Sound items.
-        /// </summary>
-        public float[] categoryVolumes;
+        public CategoryItem category;
         /// <summary>
         /// Prefab with SoundObject to play Sound items.
         /// </summary>
@@ -313,10 +331,5 @@ namespace OSSC
         /// Should SoundCue Fade Out?
         /// </summary>
         public bool isFadeOut;
-
-        /// <summary>
-        /// Should SoundCue be looped?
-        /// </summary>
-        public bool isLooped;
     }
 }

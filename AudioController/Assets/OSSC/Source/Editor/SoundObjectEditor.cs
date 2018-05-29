@@ -4,14 +4,12 @@ using UnityEngine;
 using UnityEditor;
 using OSSC;
 
-namespace OSSC.Editor
-{
+namespace OSSC.Editor {
     /// <summary>
     /// Draw the custom editor inspector for SoundObject
     /// </summary>
     [CustomEditor(typeof(SoundObject))]
-    public class SoundObjectEditor : UnityEditor.Editor
-    {
+    public class SoundObjectEditor : UnityEditor.Editor {
         /// <summary>
         /// SoundObject reference
         /// </summary>
@@ -24,8 +22,7 @@ namespace OSSC.Editor
         /// <summary>
         /// Draws the inspector's GUI
         /// </summary>
-        public override void OnInspectorGUI()
-        {
+        public override void OnInspectorGUI() {
             _ao = target as SoundObject;
 
             EditorGUILayout.LabelField("Sound Item", _ao.ID, EditorStyles.boldLabel);
@@ -40,18 +37,14 @@ namespace OSSC.Editor
         /// <summary>
         /// Draw the editor Controls of the SoundObject.
         /// </summary>
-        private void ShowControls()
-        {
-            if (_ao.source.isPlaying)
-            {
-                if (GUILayout.Button("Stop"))
-                {
+        private void ShowControls() {
+            if (_ao.source.isPlaying) {
+                if (GUILayout.Button("Stop")) {
                     _ao.Stop();
                 }
             }
 
-            if (_ao.source.clip != null)
-            {
+            if (_ao.source.clip != null) {
                 int minutes = (int)(_ao.source.time / 60f);
                 int seconds = (int)(_ao.source.time - minutes * 60);
                 EditorGUILayout.LabelField("Current Time", minutes + ":" + seconds);

@@ -2,13 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace OSSC
-{
+namespace OSSC {
     /// <summary>
     /// Manages all SoundCues
     /// </summary>
-    public class CueManager
-    {
+    public class CueManager {
         #region Private fields
         /// <summary>
         /// List of all SoundCues.
@@ -20,8 +18,7 @@ namespace OSSC
         /// <summary>
         /// Default Constructor
         /// </summary>
-        public CueManager()
-        {
+        public CueManager() {
             _soundCues = new List<SoundCue>();
         }
 
@@ -29,17 +26,15 @@ namespace OSSC
         /// Costruct CueManager with some initial SoundCues created.
         /// </summary>
         /// <param name="initialSize">Size of the SoundCue pool.</param>
-        public CueManager(int initialSize)
-        {
+        public CueManager(int initialSize) {
             _soundCues = new List<SoundCue>(initialSize);
         }
-        
+
         /// <summary>
         /// Get a free SoundCue.
         /// </summary>
         /// <returns>Returns a SoundCue instance.</returns>
-        public SoundCue GetSoundCue()
-        {
+        public SoundCue GetSoundCue() {
             SoundCue cue = FindFreeCue();
             cue.OnPlayKilled += OnPlayKilled_handler;
             return cue;
@@ -49,10 +44,8 @@ namespace OSSC
         /// Stops all SoundCues from playing.
         /// </summary>
         /// <param name="shouldCallOnEndCallback">Check whether to call OnEnd events or not.</param>
-        public void StopAllCues(bool shouldCallOnEndCallback = true)
-        {
-            for (int i = 0; i < _soundCues.Count; i++)
-            {
+        public void StopAllCues(bool shouldCallOnEndCallback = true) {
+            for (int i = 0; i < _soundCues.Count; i++) {
                 if (_soundCues[i].IsPlaying)
                     _soundCues[i].Stop(shouldCallOnEndCallback);
             }
@@ -60,8 +53,7 @@ namespace OSSC
         #endregion
 
         #region Private methods
-        private void OnPlayKilled_handler(SoundCue cue, SoundCueProxy proxy)
-        {
+        private void OnPlayKilled_handler(SoundCue cue, SoundCueProxy proxy) {
             //NOTE: Clear up any references to events.
             cue.OnPlayKilled = null;
             cue.OnPlayCueEnded = null;
@@ -73,20 +65,16 @@ namespace OSSC
         /// Finds the first non-playing SoundCue.
         /// </summary>
         /// <returns>cached SoundCue item.</returns>
-        private SoundCue FindFreeCue()
-        {
+        private SoundCue FindFreeCue() {
             SoundCue cue = null;
-            for (int i = 0; i < _soundCues.Count; i++)
-            {
-                if (_soundCues[i].IsPlaying == false)
-                {
+            for (int i = 0; i < _soundCues.Count; i++) {
+                if (_soundCues[i].IsPlaying == false) {
                     cue = _soundCues[i];
                     break;
                 }
             }
 
-            if (cue == null)
-            {
+            if (cue == null) {
                 cue = new SoundCue(_soundCues.Count);
                 _soundCues.Add(cue);
             }

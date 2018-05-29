@@ -3,16 +3,15 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
+using MEC;
 
-namespace OSSC
-{
+namespace OSSC {
     /// <summary>
     /// Used by the SoundCue.
     /// Controls the AudioSource.
     /// </summary>
     [RequireComponent(typeof(AudioSource))]
-    public class SoundObject : MonoBehaviour, IPoolable
-    {
+    public class SoundObject : MonoBehaviour, IPoolable {
 
         /// <summary>
         /// Called when SoundObject finishes playing.
@@ -36,16 +35,11 @@ namespace OSSC
         /// <summary>
         /// Curoutine used for playing the sound.
         /// </summary>
-        private Coroutine _playingRoutine;
+        private string _playingRoutineTag;
         /// <summary>
         /// Flag to check if SoundObject is paused.
         /// </summary>
         private bool _isPaused;
-
-        /// <summary>
-        /// Checks whether ObjectPool can use this SoundObject.
-        /// </summary>
-        private bool _isFree = true;
         /// <summary>
         /// Reference to the pool that this SoundObject belongs to.
         /// </summary>
@@ -67,9 +61,24 @@ namespace OSSC
         /// </summary>
         private float _pitch;
         private bool _isDespawnOnFinishedPlaying = true;
+
+        private bool _applicationQuitting;
+
+        private readonly string mecTag = Guid.NewGuid().ToString();
         #endregion
 
         #region Public methods and properties
+
+        void OnDestroy() {
+            //if (!_applicationQuitting) Debug.LogError(_id + " - " + GetHashCode() + " sound object is being destroyed while the game is running. This probably indicates a bug.");
+            Timing.KillCoroutines(mecTag);
+            Timing.KillCoroutines(_playingRoutineTag);
+        }
+
+        void OnApplicationQuit() {
+            _applicationQuitting = true;
+        }
+
         /// <summary>
         /// Check whether SoundObject should despawn after finishing playing.
         /// </summary>
@@ -77,14 +86,12 @@ namespace OSSC
             get { return _isDespawnOnFinishedPlaying; }
             set { _isDespawnOnFinishedPlaying = value; }
         }
-        
+
         /// <summary>
         /// AudioClip name played.
         /// </summary>
-        public string clipName
-        {
-            get
-            {
+        public string clipName {
+            get {
                 return _clip != null ? _clip.name : "NONE";
             }
         }
@@ -92,8 +99,7 @@ namespace OSSC
         /// <summary>
         /// Gets the SoundObject's AudioSource.
         /// </summary>
-        public AudioSource source
-        {
+        public AudioSource source {
             get { return _source; }
         }
 
@@ -114,15 +120,14 @@ namespace OSSC
         /// <param name="fadeOutTime">Fade Out Time</param>
         /// <param name="mixer">Audio Mixer group</param>
         /// <param name="pitch">Pitch of the sound</param>
-        public void Setup(string id, AudioClip clip, float volume, float fadeInTime = 0f, float fadeOutTime = 0f, AudioMixerGroup mixer = null, float pitch = 1f)
-        {
+        public void Setup(string id, AudioClip clip, int priority, float volume, float fadeInTime = 0f, float fadeOutTime = 0f, AudioMixerGroup mixer = null, float pitch = 1f) {
             _id = id;
             _clip = clip;
             gameObject.name = _id;
             if (_source == null)
                 _source = GetComponent<AudioSource>();
-
             _source.volume = 0;
+            _source.priority = priority;
             _source.time = 0f;
             _source.outputAudioMixerGroup = mixer;
             _volume = volume;
@@ -131,27 +136,33 @@ namespace OSSC
             _fadeOutTime = fadeOutTime;
         }
 
+        public void SwitchClip(string id, AudioClip clip) {
+            _clip = clip;
+            if (_source == null)
+                _source = GetComponent<AudioSource>();
+            _source.time = 0f;
+        }
+
         /// <summary>
         /// Plays the AudioSource.
         /// </summary>
-        public void Play()
-        {
+        public void Play() {
             if (_source == null)
                 _source = GetComponent<AudioSource>();
             _source.clip = _clip;
             gameObject.SetActive(true);
             _source.pitch = _pitch;
-            StartCoroutine(FadeRoutine(_fadeInTime, _volume));
+            _source.enabled = true;
+            Timing.RunCoroutine(FadeRoutine(_fadeInTime, _volume), mecTag);
             _source.Play();
-            _isFree = false;
-            _playingRoutine = StartCoroutine(PlayingRoutine());
+            _playingRoutineTag = Guid.NewGuid().ToString();
+            Timing.RunCoroutine(PlayingRoutine(), _playingRoutineTag);
         }
 
         /// <summary>
         /// Pauses the AudioSource.
         /// </summary>
-        public void Pause()
-        {
+        public void Pause() {
             if (_source == null)
                 return;
             _isPaused = true;
@@ -161,8 +172,7 @@ namespace OSSC
         /// <summary>
         /// Resumes from Pause.
         /// </summary>
-        public void Resume()
-        {
+        public void Resume() {
             if (_source == null)
                 return;
             _source.Play();
@@ -172,20 +182,23 @@ namespace OSSC
         /// <summary>
         /// Stops the SoundObject from playing.
         /// </summary>
-        public void Stop()
-        {
-            if (_playingRoutine == null)
+        public void Stop() {
+            if (_playingRoutineTag == null)
                 return;
 
-            StartCoroutine(StopRoutine());
+            Timing.RunCoroutine(StopRoutine(), mecTag);
+        }
+
+        public float Volume {
+            get { return _source.volume; }
+            set { _source.volume = value; }
         }
 
         /// <summary>
         /// Internal test method
         /// </summary>
         [ContextMenu("Test Play")]
-        private void TestPlay()
-        {
+        private void TestPlay() {
             Play();
         }
         #endregion
@@ -196,23 +209,20 @@ namespace OSSC
         /// <param name="fadeTime">time to fade</param>
         /// <param name="value">target volume to fade to.</param>
         /// <returns></returns>
-        private IEnumerator FadeRoutine(float fadeTime, float value)
-        {
-            if (fadeTime < 0.1f)
-            {
+        private IEnumerator<float> FadeRoutine(float fadeTime, float value) {
+            if (fadeTime < 0.1f) {
                 _source.volume = value;
                 yield break;
             }
 
             float initVal = _source.volume;
-            float fadeSpeed = 1f / (fadeTime / Time.deltaTime);
-            for (float t = 0f; t < 1f; t += fadeSpeed)
-            {
+            float fadeSpeed = 1 / fadeTime;
+            float fadeStep = Timing.DeltaTime * fadeSpeed;
+            for (float t = 0f; t < 1f; t += fadeStep) {
                 float val = Mathf.SmoothStep(initVal, value, t);
                 _source.volume = val;
-                yield return null;
+                yield return Timing.WaitForOneFrame;
             }
-
             _source.volume = value;
         }
 
@@ -220,14 +230,12 @@ namespace OSSC
         /// Internal method to Stop the SoundObject.
         /// </summary>
         /// <returns></returns>
-        private IEnumerator StopRoutine()
-        {
-            StopCoroutine(_playingRoutine);
-            yield return StartCoroutine(FadeRoutine(_fadeOutTime, 0f));
+        private IEnumerator<float> StopRoutine() {
+            Timing.KillCoroutines(_playingRoutineTag);
+            yield return Timing.WaitUntilDone(Timing.RunCoroutine(FadeRoutine(_fadeOutTime, 0f), mecTag));
             _source.Stop();
             _source.clip = null;
-            _playingRoutine = null;
-            _isFree = true;
+            _playingRoutineTag = null;
             _volume = 0f;
             _source.time = 0f;
             _source.pitch = 1f;
@@ -235,8 +243,7 @@ namespace OSSC
             if (isDespawnOnFinishedPlaying)
                 _pool.Despawn(gameObject);
 
-            if (OnFinishedPlaying != null)
-            {
+            if (OnFinishedPlaying != null) {
                 OnFinishedPlaying(this);
             }
         }
@@ -245,33 +252,29 @@ namespace OSSC
         /// Internal method to play the SoundObject.
         /// </summary>
         /// <returns></returns>
-        private IEnumerator PlayingRoutine()
-        {
-            while (true)
-            {
-                yield return null;
+        private IEnumerator<float> PlayingRoutine() {
+            while (true) {
+                yield return Timing.WaitForOneFrame;
+
+                if (_source.clip == null) yield break;
+
                 float fadeOutTrigger = _source.clip.length - _fadeOutTime;
-                if (_source.time >= fadeOutTrigger)
-                {
-                    yield return StartCoroutine(FadeRoutine(_fadeOutTime, 0f));
+                if (_source.time >= fadeOutTrigger) {
+                    yield return Timing.WaitUntilDone(Timing.RunCoroutine(FadeRoutine(_fadeOutTime, 0f), mecTag));
                 }
-                if (!_source.isPlaying && !_isPaused)
-                {
+                if (!_source.isPlaying && !_isPaused) {
                     break;
                 }
             }
 
             _source.clip = null;
-            _playingRoutine = null;
-            _isFree = true;
-            _volume = 0f;
+            _playingRoutineTag = null;
             _source.time = 0f;
 
             if (isDespawnOnFinishedPlaying)
                 _pool.Despawn(gameObject);
 
-            if (OnFinishedPlaying != null)
-            {
+            if (OnFinishedPlaying != null) {
                 OnFinishedPlaying(this);
             }
         }
@@ -288,9 +291,8 @@ namespace OSSC
         /// <summary>
         /// Check IPoolable
         /// </summary>
-        public bool IsFree()
-        {
-            return _isFree;
+        public bool IsFree() {
+            return !_pool.IsActive(gameObject);
         }
         #endregion
     }

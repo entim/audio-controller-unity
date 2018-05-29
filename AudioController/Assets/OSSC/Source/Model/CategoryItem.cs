@@ -1,15 +1,15 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace OSSC.Model
-{
+namespace OSSC.Model {
     /// <summary>
     /// Used by the SoundControllerData to store categories.
     /// </summary>
-    [System.Serializable]
-    public class CategoryItem
-    {
+    [Serializable]
+    public class CategoryItem {
+        public string id;
         /// <summary>
         /// Category name
         /// </summary>
@@ -26,6 +26,10 @@ namespace OSSC.Model
         /// Check whether to use alternative SoundObject prefab.
         /// </summary>
         public bool usingDefaultPrefab = true;
+        /// <summary>
+        /// Mixer group associated with this SoundItem.
+        /// </summary>
+        public UnityEngine.Audio.AudioMixerGroup mixer;
 
         /// <summary>
         /// Volume of the category
@@ -33,10 +37,9 @@ namespace OSSC.Model
         [Range(0f, 1f)]
         public float categoryVolume = 1f;
 
-        /// <summary>
-        /// Used for Editor to save whether the SoundItems are folded out or not.
-        /// </summary>
-        public bool foldOutSoundItems = false;
+        [Range(1, 256)]
+        public int categoryPriority = 128;
+
         /// <summary>
         /// Save the last search name written in editor.
         /// </summary>
@@ -45,6 +48,10 @@ namespace OSSC.Model
         /// Is Category mute?
         /// </summary>
         public bool isMute = false;
+
+        public CategoryItem() {
+            id = Guid.NewGuid().ToString();
+        }
     }
 
 }
