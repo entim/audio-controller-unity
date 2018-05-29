@@ -17,12 +17,20 @@ Main changes:
 - Override category priority at sound item level.
 - Preview sound item clips.
 - Convinience features in the sound controller inspector like navigation, duplicating items, saving state to remember selected category and sound item.
-- Change sound controller inspector layout.
+- Changed sound controller inspector layout.
 - Singleton sound controller - for now. This might very well change.
 - Stack based object pool.
 - Overridable position in PlaySoundSettings when parenting to a GameObject.
+- Coroutine manegement with [MEC](http://trinary.tech/category/mec/)
 
 ![alt text][screen-mod]
+
+##How to add it to your poject
+
+Unitypackage not included.
+1. Add [MEC](https://assetstore.unity.com/packages/tools/animation/more-effective-coroutines-free-54975) to your project if you haven't already.
+2. Copy the contents of the Assets folder under your Assets folder the way you like to organize your external assets.
+3. Copy Editor Default Resources under your Assets folder.
 
 [screen-mod]: https://github.com/entim/audio-controller-unity/blob/develop/screenshot.PNG
 
