@@ -1,6 +1,6 @@
 # Sound Controller for Unity3D
 
-This is a fork of [Dimixar's Sound Controller](https://github.com/dimixar/audio-controller-unity) which I tailored it to my needs. Kudos for Dimixar for creating the original!
+This is a fork of [Dimixar's Sound Controller](https://github.com/dimixar/audio-controller-unity) which I tailored to my needs. Kudos for Dimixar for creating the original!
 
 Main changes:
 - Sound items are referenced by id instead of name. This is less flexible, but makes it much easier to find and to rename items.
@@ -22,7 +22,9 @@ Main changes:
 - Stack based object pool.
 - Overridable position in PlaySoundSettings when parenting to a GameObject.
 
-[screen]: https://github.com/entim/audio-controller-unity/blob/develop/screenshot.PNG
+![alt text][screen-mod]
+
+[screen-mod]: https://github.com/entim/audio-controller-unity/blob/develop/screenshot.PNG
 
 ## Original Readme
 
