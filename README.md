@@ -25,7 +25,7 @@ Main changes:
 
 ![alt text][screen-mod]
 
-##How to add it to your poject
+## How to add it to your poject
 
 Unitypackage not included.
 1. Add [MEC](https://assetstore.unity.com/packages/tools/animation/more-effective-coroutines-free-54975) to your project if you haven't already.
