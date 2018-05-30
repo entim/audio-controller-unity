@@ -3,7 +3,7 @@
 This is a fork of [Dimixar's Sound Controller](https://github.com/dimixar/audio-controller-unity) which I tailored to my needs. Kudos for Dimixar for creating the original!
 
 Main changes:
-- Sound items are referenced by id instead of name. This is less flexible, but makes it much easier to find and to rename items.
+- Sound items are referenced by id instead of name. This is less flexible, but makes it much easier to find and to rename items. This change is not backward compatible with existing SoundControllerData instances created with the Dimixar's OSSC!
 - Removed tag support.
 - Added priority setting to categories.
 - Moved mixer setting to categories.
