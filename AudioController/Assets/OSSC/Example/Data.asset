@@ -12,51 +12,130 @@ MonoBehaviour:
   m_Name: Data
   m_EditorClassIdentifier: 
   items:
-  - name: SFX
+  - id: 8f1321de-ee2f-4eed-a426-2a0b11ab04d0
+    name: Music
     soundItems:
-    - name: Whosh
-      tagID: -1
-      mixer: {fileID: 0}
+    - id: db602a23-5710-4122-a57c-9ecad92745de
+      name: Beat Loop
       clips:
-      - {fileID: 8300000, guid: 104ccf2867c50ab4487cb32f7017f65d, type: 3}
+      - {fileID: 8300000, guid: c7a3815d309ab9849900f438ba81fcea, type: 3}
+      playMode: 2
+      overridePriority: 0
+      priority: 128
+      minTimeBetweenPlay: 0.1
+      isRandomPitch: 0
+      pitchRange:
+        min: 1
+        max: 1
+      isRandomVolume: 0
+      volumeRange:
+        min: 1
+        max: 1
       volume: 1
-    - name: CrackingIce
-      tagID: -1
-      mixer: {fileID: 0}
+    audioObjectPrefab: {fileID: 0}
+    usingDefaultPrefab: 1
+    mixer: {fileID: 0}
+    categoryVolume: 1
+    categoryPriority: 128
+    soundsSearchName: 
+    isMute: 0
+  - id: 1c17926e-0cf7-4cff-a12b-d03a90dc1718
+    name: SFX
+    soundItems:
+    - id: dd6feedb-7510-4baa-a021-366024300128
+      name: Coin Random Pitch
       clips:
-      - {fileID: 8300000, guid: 8a4f53a9924f9e347bbf73517539d49e, type: 3}
+      - {fileID: 8300000, guid: 794976885e2ca9040a99e92939e551b6, type: 3}
+      playMode: 1
+      overridePriority: 0
+      priority: 128
+      minTimeBetweenPlay: 0.1
+      isRandomPitch: 1
+      pitchRange:
+        min: 0.844257
+        max: 1
+      isRandomVolume: 0
+      volumeRange:
+        min: 1
+        max: 1
       volume: 1
-    - name: Coins
-      tagID: -1
-      mixer: {fileID: 0}
+    - id: 5ee88e50-3a68-4eeb-b497-f5fdb5845485
+      name: Coin Random Volume
+      clips:
+      - {fileID: 8300000, guid: 794976885e2ca9040a99e92939e551b6, type: 3}
+      playMode: 1
+      overridePriority: 0
+      priority: 128
+      minTimeBetweenPlay: 0.1
+      isRandomPitch: 0
+      pitchRange:
+        min: 0.844257
+        max: 1
+      isRandomVolume: 1
+      volumeRange:
+        min: 0.2126325
+        max: 1
+      volume: 1
+    - id: 2d52ee3f-4dc1-4b70-8b84-1ad5ca1f239a
+      name: Coins
       clips:
       - {fileID: 8300000, guid: 794976885e2ca9040a99e92939e551b6, type: 3}
       - {fileID: 8300000, guid: e808de1807589284aa819d26d1ed4bf3, type: 3}
+      playMode: 1
+      overridePriority: 0
+      priority: 128
+      minTimeBetweenPlay: 0.1
+      isRandomPitch: 0
+      pitchRange:
+        min: 0.844257
+        max: 1
+      isRandomVolume: 0
+      volumeRange:
+        min: 1
+        max: 1
       volume: 1
-    audioObjectPrefab: {fileID: 0}
-    usingDefaultPrefab: 1
-    categoryVolume: 1
-    foldOutSoundItems: 1
-    soundsSearchName: 
-    isMute: 0
-  - name: Music
-    soundItems:
-    - name: Ballade
-      tagID: 0
-      mixer: {fileID: 0}
+    - id: 446266b6-939d-441b-98ae-7d376b4bc300
+      name: Effect Sequence
       clips:
-      - {fileID: 8300000, guid: df4aeddb370124548ac3e0085b01e028, type: 3}
+      - {fileID: 8300000, guid: 6a169b80c5b019148841709ccc77b5a7, type: 3}
+      - {fileID: 8300000, guid: a3b9770dd5c00ae49b85ec2f8c8bc059, type: 3}
+      playMode: 0
+      overridePriority: 0
+      priority: 128
+      minTimeBetweenPlay: 0.1
+      isRandomPitch: 0
+      pitchRange:
+        min: 1
+        max: 1
+      isRandomVolume: 0
+      volumeRange:
+        min: 1
+        max: 1
+      volume: 1
+    - id: 06447a23-7361-4584-9270-e99ba9fd85bf
+      name: Minigun
+      clips:
+      - {fileID: 8300000, guid: f0e80ae1229f4a74fa7e767124a83f10, type: 3}
+      - {fileID: 8300000, guid: 33dba0260a144194c8cf330da2194cd1, type: 3}
+      - {fileID: 8300000, guid: 4cb58fb384e5dd44397a2b803fb98d9c, type: 3}
+      playMode: 4
+      overridePriority: 0
+      priority: 128
+      minTimeBetweenPlay: 0.1
+      isRandomPitch: 0
+      pitchRange:
+        min: 1
+        max: 1
+      isRandomVolume: 0
+      volumeRange:
+        min: 1
+        max: 1
       volume: 1
     audioObjectPrefab: {fileID: 0}
     usingDefaultPrefab: 1
+    mixer: {fileID: 0}
     categoryVolume: 1
-    foldOutSoundItems: 1
+    categoryPriority: 128
     soundsSearchName: 
     isMute: 0
-  foldOutCategories: 1
-  foldOutTags: 1
   assetName: 
-  soundTags:
-    _tagsData:
-    - name: classical
-      ID: 0

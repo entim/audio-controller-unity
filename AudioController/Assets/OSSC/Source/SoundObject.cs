@@ -60,9 +60,9 @@ namespace OSSC {
         /// Pitch of the sound.
         /// </summary>
         private float _pitch;
-        private bool _isDespawnOnFinishedPlaying = true;
+        private bool _isDespawnOnFinishedPlaying;
 
-        private bool _applicationQuitting;
+        //private bool _applicationQuitting;
 
         private readonly string mecTag = Guid.NewGuid().ToString();
         #endregion
@@ -74,10 +74,18 @@ namespace OSSC {
             Timing.KillCoroutines(mecTag);
             Timing.KillCoroutines(_playingRoutineTag);
         }
-
-        void OnApplicationQuit() {
-            _applicationQuitting = true;
+        
+        void OnApplicationFocus(bool hasFocus) {
+            _isPaused = !hasFocus;
         }
+        
+        void OnApplicationPause(bool paused) {
+            _isPaused = paused;
+        }
+
+        /*void OnApplicationQuit() {
+            _applicationQuitting = true;
+        }*/
 
         /// <summary>
         /// Check whether SoundObject should despawn after finishing playing.
@@ -120,12 +128,13 @@ namespace OSSC {
         /// <param name="fadeOutTime">Fade Out Time</param>
         /// <param name="mixer">Audio Mixer group</param>
         /// <param name="pitch">Pitch of the sound</param>
-        public void Setup(string id, AudioClip clip, int priority, float volume, float fadeInTime = 0f, float fadeOutTime = 0f, AudioMixerGroup mixer = null, float pitch = 1f) {
+        public void Setup(string id, AudioClip clip, bool loop, int priority, float volume, float fadeInTime = 0f, float fadeOutTime = 0f, AudioMixerGroup mixer = null, float pitch = 1f) {
             _id = id;
             _clip = clip;
             gameObject.name = _id;
             if (_source == null)
                 _source = GetComponent<AudioSource>();
+            _source.loop = loop;
             _source.volume = 0;
             _source.priority = priority;
             _source.time = 0f;
@@ -173,7 +182,7 @@ namespace OSSC {
         /// Resumes from Pause.
         /// </summary>
         public void Resume() {
-            if (_source == null)
+            if (_source == null || !_isPaused)
                 return;
             _source.Play();
             _isPaused = false;
@@ -239,9 +248,12 @@ namespace OSSC {
             _volume = 0f;
             _source.time = 0f;
             _source.pitch = 1f;
+            _source.loop = false;
 
-            if (isDespawnOnFinishedPlaying)
+            if (isDespawnOnFinishedPlaying) {
                 _pool.Despawn(gameObject);
+                isDespawnOnFinishedPlaying = false;
+            }
 
             if (OnFinishedPlaying != null) {
                 OnFinishedPlaying(this);
@@ -271,8 +283,10 @@ namespace OSSC {
             _playingRoutineTag = null;
             _source.time = 0f;
 
-            if (isDespawnOnFinishedPlaying)
+            if (isDespawnOnFinishedPlaying) {
                 _pool.Despawn(gameObject);
+                isDespawnOnFinishedPlaying = false;
+            }
 
             if (OnFinishedPlaying != null) {
                 OnFinishedPlaying(this);
@@ -283,7 +297,7 @@ namespace OSSC {
         /// <summary>
         /// Check IPoolable
         /// </summary>
-        PrefabBasedPool IPoolable.pool {
+        PrefabBasedPool IPoolable.Pool {
             get { return _pool; }
             set { _pool = value; }
         }

@@ -39,6 +39,12 @@ public class ObjectPool : MonoBehaviour {
         return pool.GetFreeObject();
     }
 
+    public void Deactivate() {
+        foreach (PrefabBasedPool pool in pools) {
+            pool.Active = false;
+        }
+    }
+
     #endregion
 
     #region Monobehaviour methods
@@ -51,9 +57,7 @@ public class ObjectPool : MonoBehaviour {
 
     // Prevent despawning during destroy
     void OnApplicationQuit() {
-        foreach (PrefabBasedPool pool in pools) {
-            pool.Active = false;
-        }
+        Deactivate();
     }
     #endregion
 }
@@ -91,7 +95,7 @@ public class PrefabBasedPool {
             freeObj = GameObject.Instantiate(prefab, Vector3.zero, Quaternion.identity, parent);
             freeObj.SetActive(true);
             var objPoolable = freeObj.GetComponent<IPoolable>();
-            objPoolable.pool = this;
+            objPoolable.Pool = this;
         }
         return freeObj;
     }

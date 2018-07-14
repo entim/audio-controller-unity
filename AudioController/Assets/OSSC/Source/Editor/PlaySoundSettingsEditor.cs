@@ -11,7 +11,6 @@ using OSSC.Model;
 public class PlaySoundSettingsEditor : PropertyDrawer {
 
     private float textHeight;
-    private Color labelColor = new Color(1, 0.686f, 0.011f);
 
     private SoundSelection selected;
 
@@ -24,17 +23,19 @@ public class PlaySoundSettingsEditor : PropertyDrawer {
     private SerializedProperty fadeOutTime;
 
     public override float GetPropertyHeight(SerializedProperty property, GUIContent label) {
-        return base.GetPropertyHeight(property, label) * (property.isExpanded ? 9 : 1);
+        float fieldHeight = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
+        int fields = property.isExpanded ? 6 : 1;
+        return fieldHeight * fields - EditorGUIUtility.standardVerticalSpacing;
     }
 
     public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
-        textHeight = GUI.skin.textField.lineHeight + GUI.skin.textField.margin.top + GUI.skin.textField.border.top;
+        textHeight = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
 
         label = EditorGUI.BeginProperty(position, label, property);
 
-        position.height = 16;
+        position.height = EditorGUIUtility.singleLineHeight;
 
-        property.isExpanded = EditorGUI.Foldout(position, property.isExpanded, label);
+        property.isExpanded = EditorGUI.Foldout(position, property.isExpanded, label, true);
         if (property.isExpanded) {
             rootProperty = property;
             database = property.FindPropertyRelative("database");
@@ -44,35 +45,27 @@ public class PlaySoundSettingsEditor : PropertyDrawer {
             fadeInTime = property.FindPropertyRelative("fadeInTime");
             fadeOutTime = property.FindPropertyRelative("fadeOutTime");
 
-            GenericMenu menu = BuildMenu(database.objectReferenceValue as SoundControllerData, categoryId, soundItemId);
-
-            Rect rect = EditorGUI.IndentedRect(position);
             EditorGUI.indentLevel++;
+            float indentSize = EditorGUI.IndentedRect(position).x - position.x;
+
+            Rect rect = position;
 
             rect.y += textHeight;
-            float prevX = rect.x;
-            rect.x += 16;
-            var buttonText = new GUIContent("Select sound");
-            float prevWidth = rect.width;
-            rect.width = GUI.skin.button.CalcSize(buttonText).x;
-            if (EditorGUI.DropdownButton(rect, buttonText, FocusType.Keyboard)) {
+
+            Rect soundItemRect = EditorGUI.IndentedRect(rect);
+            soundItemRect.width = EditorGUIUtility.labelWidth;
+
+            GUI.Label(soundItemRect, new GUIContent("Sound Item"));
+
+            soundItemRect.x += EditorGUIUtility.labelWidth - indentSize;
+            soundItemRect.width = EditorGUIUtility.currentViewWidth - soundItemRect.x - indentSize - GUI.skin.textField.padding.left;
+
+            string selectedSoundItemDisplayName = BuildSelectedSoundPath();
+            var buttonText = new GUIContent(selectedSoundItemDisplayName, selectedSoundItemDisplayName);
+            if (EditorGUI.DropdownButton(soundItemRect, buttonText, FocusType.Keyboard)) {
+                GenericMenu menu = BuildMenu(database.objectReferenceValue as SoundControllerData, categoryId, soundItemId);
                 menu.ShowAsContext();
             }
-            rect.width = prevWidth;
-
-            //rect.y += textHeight;
-            rect.x += GUI.skin.button.CalcSize(buttonText).x;
-            rect.width -= rect.x - 16;
-            EditorGUI.BeginDisabledGroup(true);
-            Color prevColor = GUI.backgroundColor;
-            GUI.backgroundColor = labelColor;
-            string path = BuildSelectedSoundPath();
-            EditorGUI.TextField(rect, BuildSelectedSoundPath());
-            GUI.backgroundColor = prevColor;
-            EditorGUI.EndDisabledGroup();
-            EditorGUI.LabelField(rect, new GUIContent("", path));
-            rect.x = prevX;
-            rect.width = prevWidth;
 
             rect.y += textHeight;
             EditorGUI.PropertyField(rect, database, new GUIContent(database.displayName));
@@ -123,7 +116,7 @@ public class PlaySoundSettingsEditor : PropertyDrawer {
     }
 
     private string BuildSelectedSoundPath() {
-        string path = "";
+        string path = "Select sound";
 
         if (database != null) {
             SoundControllerData db = database.objectReferenceValue as SoundControllerData;

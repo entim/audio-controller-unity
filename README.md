@@ -2,7 +2,10 @@
 
 This is a fork of [Dimixar's Sound Controller](https://github.com/dimixar/audio-controller-unity) which I tailored to my needs. Kudos for Dimixar for creating the original!
 
-Main changes:
+**Not backward compatible with [v0.0.4](https://github.com/dimixar/audio-controller-unity/tree/0.0.4)!**
+
+## Main changes
+- Moved onus from programmatically setting up sounds to do it in the editor to be more designer friendly.
 - Sound items are referenced by id instead of name. This is less flexible, but makes it much easier to find and to rename items. This change is not backward compatible with existing SoundControllerData instances created with the Dimixar's OSSC!
 - Removed tag support.
 - Added priority setting to categories.
@@ -28,9 +31,21 @@ Main changes:
 ## How to add it to your project
 
 Unitypackage not included.
-1. Add [MEC](https://assetstore.unity.com/packages/tools/animation/more-effective-coroutines-free-54975) to your project if you haven't already.
-2. Copy the contents of the Assets folder under your Assets folder the way you like to organize your external assets.
-3. Copy Editor Default Resources under your Assets folder.
+1. Copy the contents of the Assets folder under your Assets folder the way you like to organize your external assets.
+2. Create new SoundControllerData asset using the contextual menu from Project hierarchy.
+3. Find the prefab with SoundController in OSSC folder and drag it onto the scene.
+4. Add your new created SoundControllerData asset into the corresponding object field of the SoundContoller component.
+5. Select gameobject with SoundController and start adding categories and items.
+6. Add PlaySoundSettings objects to behaviors and set them up in the editor.
+7. Trigger sounds by calling SoundController.Play().
+
+## Hints
+- Call SoundController.Shutdown when application is quitting and when new scene is loaded to avoid exceptions in logs.
+- Despawn active SoundObject instances parented to GameObjects when the parent is destroyed to avoid losing object from the pool.
+
+## Known issues
+- Fade settings are applied to individual items in a sequence instead of the start and end of the sequence iteself.
+- Gap in Loop Sequence play mode when the sequence is started over.
 
 [screen-mod]: https://github.com/entim/audio-controller-unity/blob/develop/screenshot.PNG
 

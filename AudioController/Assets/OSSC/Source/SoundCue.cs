@@ -85,8 +85,7 @@ namespace OSSC {
         public void Play(SoundCueData data) {
             _data = data;
 
-            AudioObject.isDespawnOnFinishedPlaying = data.soundItem.clips.Length == 1 &&
-                (data.soundItem.playMode == Model.PlayMode.sequence || data.soundItem.playMode == Model.PlayMode.random);
+            AudioObject.isDespawnOnFinishedPlaying = data.soundItem.playMode == Model.PlayMode.random;
 
             AudioObject.OnFinishedPlaying = ChooseFinishedPlayingHandler(data.soundItem.playMode);
 
@@ -129,8 +128,8 @@ namespace OSSC {
         public void Stop(bool shouldCallOnFinishedCue = true) {
             if (IsPlaying == false) return;
 
+            AudioObject.isDespawnOnFinishedPlaying = true;
             AudioObject.OnFinishedPlaying = null;
-            // ((IPoolable)audioObject).pool.Despawn(audioObject.gameObject);
             AudioObject.Stop();
             AudioObject = null;
             _currentClip = 0;
@@ -149,13 +148,17 @@ namespace OSSC {
         }
 
         public void StopSequence() {
-            UnityEngine.Assertions.Assert.IsTrue(_data.soundItem.playMode == Model.PlayMode.introLoopOutroSequence, "[AudioCue] Cannot stop sequence when it's not in intro loop outry play mode.");
+            UnityEngine.Assertions.Assert.IsTrue(_data.soundItem.playMode == Model.PlayMode.introLoopOutroSequence
+                || _data.soundItem.playMode == Model.PlayMode.sequence,
+                "[AudioCue] Cannot stop cue when it's not in a sequence play mode.");
+
             if (IsPlaying == false)
                 return;
 
             AudioObject.isDespawnOnFinishedPlaying = true;
-            if (!_data.category.isMute) {
+            if (_data.soundItem.playMode == Model.PlayMode.introLoopOutroSequence && _currentClip != 3 && !_data.category.isMute) {
                 _currentClip = 2;
+                AudioObject.source.loop = false;
                 PlayCurrentClip();
                 _currentClip += 1;
             } else {
@@ -186,7 +189,7 @@ namespace OSSC {
         private void OnFinishedPlayingSequence_handler(SoundObject obj) {
             string itemName = _data.soundItem.name;
             if (OnPlayEnded != null) OnPlayEnded(itemName);
-
+            
             if (_currentClip < _data.soundItem.clips.Length) {
                 if (_currentClip == _data.soundItem.clips.Length - 1) AudioObject.isDespawnOnFinishedPlaying = true;
                 if (TryPlayNextClip() == false) Stop(true);
@@ -206,9 +209,7 @@ namespace OSSC {
             if (OnPlayEnded != null) OnPlayEnded(itemName);
             
             if (_currentClip == 1) {
-                if (TryPlayNextClip() == false) Stop(true);
-            } else if (_currentClip == 2) {
-                _currentClip = 1;
+                AudioObject.source.loop = true;
                 if (TryPlayNextClip() == false) Stop(true);
             } else {
                 Stop(true);
@@ -232,9 +233,7 @@ namespace OSSC {
         private void OnFinishedPlayingLoopOneClip_handler(SoundObject obj) {
             string itemName = _data.soundItem.name;
             if (OnPlayEnded != null) OnPlayEnded(itemName);
-            
-            _currentClip = 0;
-            if (TryPlayNextClip() == false) Stop(true);
+            Stop(true);
         }
 
         /// <summary>
@@ -243,7 +242,7 @@ namespace OSSC {
         /// <returns>True - can play, False - Cannot</returns>
         private bool TryPlayNextClip() {
             bool isPlaying = false;
-            if (!_data.category.isMute) {
+            if (!_data.category.isMute && AudioObject.isActiveAndEnabled) {
                 PlayCurrentClip();
                 _currentClip += 1;
                 isPlaying = true;
@@ -268,6 +267,7 @@ namespace OSSC {
                 AudioObject.Setup(
                     item.name,
                     GetClip(item.playMode, item.clips),
+                    item.playMode == Model.PlayMode.loopOneClip,
                     priority,
                     volume,
                     _data.fadeInTime,
@@ -280,8 +280,8 @@ namespace OSSC {
             AudioObject.Play();
         }
 
-        private AudioClip GetClip(Model.PlayMode loopMode, AudioClip[] clips) {
-            if (loopMode == Model.PlayMode.random) {
+        private AudioClip GetClip(Model.PlayMode playMode, AudioClip[] clips) {
+            if (playMode == Model.PlayMode.random) {
                 return GetRandomClip(clips);
             } else {
                 return clips[_currentClip];

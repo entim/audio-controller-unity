@@ -9,7 +9,7 @@ public interface IPoolable {
     /// <summary>
     /// Saves the pool that it belongs to.
     /// </summary>
-    PrefabBasedPool pool {
+    PrefabBasedPool Pool {
         get; set;
     }
 

@@ -13,10 +13,6 @@ namespace OSSC.Editor {
     [CustomEditor(typeof(SoundController))]
     public class SoundControllerEditor : UnityEditor.Editor {
         /// <summary>
-        /// Max search string length
-        /// </summary>
-        private const int NAME_ABV_LEN = 50;
-        /// <summary>
         /// Max pitch limit range
         /// </summary>
         private const float PITCH_RANGE_MAX = 3f;
@@ -31,9 +27,12 @@ namespace OSSC.Editor {
 
         private int categoryIndex = 0;
         private int soundItemIndex = 0;
+        private string searchText = "";
 
         private Color labelColor = new Color(1, 0.686f, 0.011f);
         private GUIStyle headerStyle;
+        private GUIStyle searchTextStyle;
+        private GUIStyle searchCancelButtonStyle;
         private Texture separatorTexture;
         private Texture playButtonTexture;
         private Texture stopButtonTexture;
@@ -61,8 +60,8 @@ namespace OSSC.Editor {
             _ac = target as SoundController;
 
             separatorTexture = EditorGUIUtility.Load("IN foldout act on@2x") as Texture;
-            playButtonTexture = EditorGUIUtility.Load("OSSC/play_button.png") as Texture;
-            stopButtonTexture = EditorGUIUtility.Load("OSSC/stop_button.png") as Texture;
+            playButtonTexture = Resources.Load("Icons/OSSC_play_button") as Texture;
+            stopButtonTexture = Resources.Load("Icons/OSSC_stop_button") as Texture;
 
             categoryComparison = (a, b) => {
                 if (a.name == null) {
@@ -114,6 +113,9 @@ namespace OSSC.Editor {
             headerStyle = new GUIStyle(EditorStyles.helpBox);
             headerStyle.padding = new RectOffset(3, 3, 3, 3);
 
+            searchTextStyle = GUI.skin.FindStyle("SearchTextField");
+            searchCancelButtonStyle = GUI.skin.FindStyle("SearchCancelButton");
+
             if (_ac._database == null) {
                 EditorGUILayout.HelpBox("Create SoundControllerData asset, then throw it here.", MessageType.Info);
             } else {
@@ -143,6 +145,12 @@ namespace OSSC.Editor {
 
             // Start to listen to changes to register them in the editor undo queue
             EditorGUI.BeginChangeCheck();
+            
+            EditorGUILayout.Space();
+
+            DrawSearchSection(_ac._database);
+
+            //EditorGUILayout.Space();
 
             DrawCategorySection(_ac._database);
 
@@ -165,6 +173,56 @@ namespace OSSC.Editor {
             }
         }
 
+        private void DrawSearchSection(SoundControllerData db) {
+            EditorGUILayout.BeginHorizontal();
+
+            bool searchSubmitted = Event.current.type == EventType.KeyDown && (Event.current.keyCode == KeyCode.Return || Event.current.keyCode == KeyCode.KeypadEnter);
+
+            Rect searchFieldPosition = GUILayoutUtility.GetRect(new GUIContent(searchText), searchTextStyle);
+            searchText = EditorGUI.TextField(searchFieldPosition, searchText, searchTextStyle);
+            if (GUILayout.Button(GUIContent.none, searchCancelButtonStyle)) {
+                searchText = "";
+                GUI.FocusControl(null);
+            }
+
+            EditorGUILayout.EndHorizontal();
+
+            if (searchSubmitted && searchText.Length > 0) {
+                FindAndDisplaySearchHits(searchFieldPosition, db);
+            }
+        }
+
+        private void FindAndDisplaySearchHits(Rect position, SoundControllerData db) {
+            string lowerCaseSearchText = searchText.ToLower();
+            List<GUIContent> hitDisplayNames = new List<GUIContent>();
+            Dictionary<int, Tuple<int, int>> hitDict = new Dictionary<int, Tuple<int, int>>();
+            int hitIndex = 0;
+            if (db.items != null) {
+                for (int categoryIndex = 0; categoryIndex < db.items.Length; categoryIndex++) {
+                    CategoryItem category = db.items[categoryIndex];
+                    if (category.soundItems != null) {
+                        for (int soundItemIndex = 0; soundItemIndex < category.soundItems.Length; soundItemIndex++) {
+                            string displayName = category.name + " | " + category.soundItems[soundItemIndex].name;
+                            if (displayName.ToLower().Contains(lowerCaseSearchText)) {
+                                hitDisplayNames.Add(new GUIContent(displayName));
+                                hitDict.Add(hitIndex, Tuple.Create(categoryIndex, soundItemIndex));
+                                hitIndex++;
+                            }
+                        }
+                    }
+                }
+            }
+
+            EditorUtility.DisplayCustomMenu(position, hitDisplayNames.ToArray(), -1, OnSearchHitSelect, hitDict);
+        }
+
+        private void OnSearchHitSelect(object userData, string[] options, int selected) {
+            Dictionary<int, Tuple<int, int>> hitDict = userData as Dictionary<int, Tuple<int, int>>;
+            Tuple<int, int> selectedIndices = hitDict[selected];
+            categoryIndex = selectedIndices.Item1;
+            soundItemIndex = selectedIndices.Item2;
+        }
+
         private void DrawCategorySection(SoundControllerData db) {
             string[] categoryNames = new string[db.items != null ? db.items.Length : 0];
             if (db.items != null && db.items.Length > 0) {
@@ -184,7 +242,7 @@ namespace OSSC.Editor {
 
             GUI.backgroundColor = prevColor;
             int prevCategoryIndex = categoryIndex;
-            bool noCategories = db.items.Length < 1;
+            bool noCategories = db.items == null || db.items.Length < 1;
 
             EditorGUI.BeginDisabledGroup(noCategories);
             categoryIndex = EditorGUILayout.Popup("Category", categoryIndex, categoryNames);

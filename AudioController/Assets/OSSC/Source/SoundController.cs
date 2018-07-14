@@ -12,8 +12,6 @@ namespace OSSC {
     [RequireComponent(typeof(ObjectPool))]
     public class SoundController : MonoBehaviour {
 
-        public static SoundController instance = null;
-
         #region Serialized Data
         /// <summary>
         /// Default prefab with SoundObject and AudioSource.
@@ -137,6 +135,11 @@ namespace OSSC {
             return proxy;
         }
 
+        public void Shutdown() {
+            StopAll();
+            _pool.Deactivate();
+        }
+
         #endregion
 
         #region Private methods
@@ -184,13 +187,7 @@ namespace OSSC {
         #region MonoBehaviour methods
 
         void Awake() {
-            print("SoundController awake");
-            if (instance == null) {
-                instance = this;
-            } else if (instance != this) {
-                Destroy(gameObject);
-            }
-
+            //print("SoundController awake");
             _pool = GetComponent<ObjectPool>();
             _cueManager = new CueManager(_initialCueManagerSize);
         }
